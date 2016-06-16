@@ -7,6 +7,7 @@
 //
 
 #import "RequestManager.h"
+#import "Acronym.h"
 
 @implementation RequestManager
 
@@ -24,8 +25,11 @@
 }
 
 
-- (void)performGetRequestForTargetUrl:(NSURL *)url withCompletionHandler:( void (^)(NSData *responseData, NSInteger statusCode, NSError *err)) completionHandler
+- (void)fetchAcronyms:(NSString *)searchString withCompletionHandler:( void (^)(NSMutableArray *acronymList, NSError *err)) completionHandler
 {
+    
+    NSURL *url = [NSURL  URLWithString:[NSString stringWithFormat:@"http://www.nactem.ac.uk/software/acromine/dictionary.py?sf=%@",searchString]];
+    
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     
     request.HTTPMethod = @"GET";
@@ -34,14 +38,75 @@
     
     NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completionHandler(data, [(NSHTTPURLResponse *)response statusCode], error );
-        });
+        
+        
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse*) response;
+        
+        if (!error && httpResponse.statusCode == 200) {
+            
+            NSError* parseError;
+            id json = [NSJSONSerialization
+                       JSONObjectWithData:data
+                       options:NSJSONReadingAllowFragments
+                       error:&parseError];
+            
+            if (parseError) {
+                
+                completionHandler(nil, parseError);
+                
+            } else {
+                
+                if (json) {
+                    if ([json isKindOfClass:[NSArray class]]) {
+                        
+                        NSMutableArray *resultArray = (NSMutableArray *) json;
+                        NSDictionary *responseDict =   nil;
+                        if (resultArray.count >0) {
+                            responseDict = resultArray[0];
+                        }
+                        
+                        NSMutableArray * searchResult = [responseDict valueForKey:@"lfs"];
+                        NSMutableArray * acronymsList = [[NSMutableArray alloc] init];
+                        
+                        NSString *shortForm = [responseDict valueForKey:@"sf"];
+                        
+                        for (NSDictionary *dict in searchResult) {
+                            
+                            Acronym *acronym = [Acronym acronymWithSortForm:shortForm longForm:dict[@"lf"] frequency:dict[@"freq"] firstOccurance:dict[@"since"] variations:dict[@"vars"]];
+                            
+                            [acronymsList addObject:acronym];
+                            
+                        }
+                        
+                        completionHandler(acronymsList, nil);
+                        
+                    } else {
+                        
+                        NSDictionary *userInfo = @{
+                                                   NSLocalizedDescriptionKey: NSLocalizedString(@"Failed to fetch Acronyms", nil),
+                                                   };
+                        error = [NSError errorWithDomain:@"" code:100 userInfo:userInfo];
+                        
+                        completionHandler(nil,error);
+                    }
+                }
+            }
+            
+        } else {
+            NSDictionary *userInfo = @{
+                                       NSLocalizedDescriptionKey: NSLocalizedString(@"Failed to fetch Acronyms", nil),
+                                       };
+            error = [NSError errorWithDomain:@"" code:100 userInfo:userInfo];
+            completionHandler(nil,error);
+        }
         
     }];
     
     [task resume];
- 
+    
 }
+
+
+
 
 @end

@@ -71,60 +71,41 @@
 {
     NSString * searchString = searchController.searchBar.text;
     
-    
-        NSURL *url = [NSURL  URLWithString:[NSString stringWithFormat:@"http://www.nactem.ac.uk/software/acromine/dictionary.py?sf=%@",searchString]];
-        
-        [[RequestManager sharedRequestManager] performGetRequestForTargetUrl:url withCompletionHandler:^(NSData *responseData, NSInteger statusCode, NSError *err) {
+    if (searchString && ![searchString isEqualToString:@""] ) {
+        [[RequestManager sharedRequestManager] fetchAcronyms:searchString withCompletionHandler:^(NSMutableArray *acronymList, NSError *err) {
             
-            
-            if (statusCode == 200 && err ==nil) {
-                if (responseData) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                
+                if ((acronymList && err == nil)) {
+                    self.searchResults = acronymList;
+                    [self.tableView reloadData];
+                }
+                else
+                {
+                    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Acronyms" message:@"Error fetching Acronyms." preferredStyle:UIAlertControllerStyleAlert];
+                    UIAlertAction *action = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
                     
-                    NSError *err = nil;
-                    NSArray * responseArray = [NSJSONSerialization JSONObjectWithData:responseData options:0  error:&err ]; //Handle error
+                    [alert addAction:action];
                     
-                    if (err == nil) {
-                        
-                        NSDictionary *responseDict = nil;
-                        if (responseArray.count >0) {
-                            responseDict = responseArray[0];
-                        }
-                        NSMutableArray * searchResult = [responseDict valueForKey:@"lfs"];
-                        NSMutableArray * acronymsList = [[NSMutableArray alloc] init];
-                        
-                        NSString *shortForm = [responseDict valueForKey:@"sf"];
-                        
-                        for (NSDictionary *dict in searchResult) {
-                            
-                            Acronym *acronym = [Acronym acronymWithSortForm:shortForm longForm:dict[@"lf"] frequency:dict[@"freq"] firstOccurance:dict[@"since"] variations:dict[@"vars"]];
-                            
-                            [acronymsList addObject:acronym];
-                            
-                        }
-                        
-                        self.searchResults = acronymsList;
-                        
-                        [self.tableView reloadData];
-
-                    }
-                    else
-                    {
-                         NSLog(@"Error while parsing response:%@", err);
-                    
-                    }
+                    [self presentViewController:alert animated:YES completion:^{
+                        searchController.searchBar.text = @"";
+                    }];
                     
                 }
-            }
-            else{
                 
-                NSLog(@"HTTP Status Code = %ld",statusCode);
-                NSLog(@"Error while searching Acronym:%@", err);
-                
-            }
+            });
             
         }];
-
+    }
+    else
+    {
+        self.searchResults = nil;
+        [self.tableView reloadData];
+    
+    }    
+    
 }
+
 
 #pragma mark - show detail view
 

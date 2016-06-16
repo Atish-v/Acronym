@@ -19,8 +19,8 @@
 /** returns shared instance for Request manager */
 +(id)sharedRequestManager;
 
-/**Performs GET request for the given url and calls completion handler with response data and error */
-- (void)performGetRequestForTargetUrl:(NSURL *)url withCompletionHandler:( void (^)(NSData *responseData, NSInteger statusCode, NSError *err)) completionHandler;
+/**Performs GET request for the given url and calls completion handler with Acronym list and error */
+- (void)fetchAcronyms:(NSString *)searchString withCompletionHandler:( void (^)(NSMutableArray *acronymList, NSError *err)) completionHandler;
 
 
 @end

@@ -13,7 +13,7 @@
 
 @interface ResultsTableViewController () <UISearchResultsUpdating>
 {
-        UISearchController *_searchController;
+    UISearchController *_searchController;
 }
 
 @end
@@ -35,7 +35,6 @@
     
     self.tableView.tableHeaderView = _searchController.searchBar;
     self.definesPresentationContext = YES;
-    
 }
 
 - (void)didReceiveMemoryWarning {
@@ -52,7 +51,6 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     return self.searchResults.count;
 }
-
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"acronymCell" forIndexPath:indexPath];
@@ -79,9 +77,7 @@
                 if ((acronymList && err == nil)) {
                     self.searchResults = acronymList;
                     [self.tableView reloadData];
-                }
-                else
-                {
+                } else {
                     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Acronyms" message:@"Error fetching Acronyms." preferredStyle:UIAlertControllerStyleAlert];
                     UIAlertAction *action = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
                     
@@ -90,20 +86,13 @@
                     [self presentViewController:alert animated:YES completion:^{
                         searchController.searchBar.text = @"";
                     }];
-                    
                 }
-                
             });
-            
         }];
-    }
-    else
-    {
+    } else {
         self.searchResults = nil;
         [self.tableView reloadData];
-    
     }    
-    
 }
 
 
